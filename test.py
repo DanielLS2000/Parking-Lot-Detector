@@ -1,46 +1,32 @@
 import cv2
+import numpy as np
 
-# Nome do arquivo de vídeo de entrada
-input_video_path = 'parkin_timelapse.mp4'
-# Nome do arquivo de vídeo de saída
-output_video_path = 'output_video.avi'
 
-# Abrir o vídeo de entrada
-cap = cv2.VideoCapture(input_video_path)
+def remove_ruido(thresh):
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(thresh, connectivity=8)
+    min_size = 80  # Tamanho mínimo de componente para manter
+    cleaned_image = np.zeros(thresh.shape, dtype=np.uint8)
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] >= min_size:
+            cleaned_image[labels == i] = 255
+    return cleaned_image
 
-# Verificar se o vídeo foi aberto com sucesso
-if not cap.isOpened():
-    print("Erro ao abrir o vídeo de entrada.")
-    exit()
-
-# Obter a largura e altura dos frames do vídeo
-frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-fps = cap.get(cv2.CAP_PROP_FPS)
-
-# Definir o codec e criar o objeto VideoWriter
-# O codec 'XVID' cria arquivos .avi. Você pode mudar para 'mp4v' para arquivos .mp4
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height), isColor=False)
-
-# Processar e salvar cada frame do vídeo
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
+def main(video_source=0):
+    cap = cv2.VideoCapture(video_source)
     
-    # Aplicar algum processamento na imagem
-    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    while cap.isOpened():
+        ret, frame2 = cap.read()
+        if not ret:
+            break
+        grayFrame = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+        thresh = cv2.adaptiveThreshold(grayFrame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 16)
+        img = remove_ruido(thresh)
+        cv2.imshow("Camera", img)
+        if cv2.waitKey(30) & 0xFF == ord('q'):
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
 
-    # Escrever o frame processado no arquivo de vídeo de saída
-    out.write(gray_frame)
-
-    # Exibir o frame (opcional)
-    cv2.imshow('Frame', gray_frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-# Liberar os objetos de captura e escrita
-cap.release()
-out.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    main()
