@@ -88,13 +88,13 @@ def detectVagas():
         grayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         thresh = cv2.adaptiveThreshold(grayFrame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 9)
-        imgBlur = cv2.medianBlur(thresh, 5)
+        imgMediana = cv2.medianBlur(thresh, 5)
         kernel = np.ones((3,3), np.int8)
-        imgD = cv2.morphologyEx(imgBlur, cv2.MORPH_OPEN, kernel)
+        imgAberta = cv2.morphologyEx(imgMediana, cv2.MORPH_OPEN, kernel)
 
         ocupado = 0
         for vaga in vagas:
-            frame2 = recortar_Imagem(imgD, vaga)
+            frame2 = recortar_Imagem(imgAberta, vaga)
             whitePixels = cv2.countNonZero(frame2)
             relativeWhitePixels = whitePixels / calcArea(vaga)
             cv2.putText(frame, str(round(relativeWhitePixels, 2)), (vaga[0]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2)
@@ -107,7 +107,7 @@ def detectVagas():
         
         cv2.putText(frame, f"{ocupado}/{len(vagas)} Vagas", (25, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2)
         cv2.imshow('Estacionamento', frame)
-        cv2.imshow("Thresh", imgD)
+        cv2.imshow("Thresh", imgAberta)
         # out.write(frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
