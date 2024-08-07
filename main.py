@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 
-def calculate_color_histogram(image):
+def calculate_histograms(image):
     histograms = []
     for i in range(3):
         hist = cv2.calcHist([image], [i], None, [256], [0, 256])
@@ -165,10 +165,8 @@ class VideoApp:
     def processaFrame(self, frame):
         grayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # Aplicar filtro Gaussiano
-        imagem_suavizada = cv2.GaussianBlur(grayFrame, (5, 5), 0)
-
         # Aplicar o algoritmo de Canny
+        imagem_suavizada = cv2.GaussianBlur(grayFrame, (5, 5), 0)
         frame_processado = cv2.Canny(imagem_suavizada, 100, 200)
 
         self.mostra_miniatura(frame_processado)
@@ -179,19 +177,20 @@ class VideoApp:
             recorte = self.recortar_Imagem(frame_processado, vaga.coords)
             whitePixels = cv2.countNonZero(recorte)
             relativeWhitePixels = whitePixels / self.calcArea(vaga.coords)
-            cv2.putText(frame, str(round(relativeWhitePixels, 2)), (vaga.coords[0][0], vaga.coords[0][1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2)
+            # cv2.putText(frame, str(round(relativeWhitePixels, 2)), (vaga.coords[0][0], vaga.coords[0][1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2)
             
-
             recorte2 = self.recortar_Imagem(frame, vaga.coords)
-            current_hist = calculate_color_histogram(recorte2)
+            current_hist = calculate_histograms(recorte2)
             similarity = compare_histograms(vaga.initial_hist, current_hist)
-            
-            if relativeWhitePixels >= 0.2:
-                vaga.ocupada = True
-            elif similarity >= 0.6:
-                vaga.ocupada = vaga.ocupada_inicialmente
+
+            if similarity >= 0.6:
+                vaga.ocupada = vaga.ocupada
             else:
-                vaga.ocupada = False
+                if relativeWhitePixels >= 0.15:
+                    vaga.ocupada = True
+                else:
+                    vaga.ocupada = False
+            
             vaga.register_occupation()
 
 
@@ -227,7 +226,7 @@ class VideoApp:
             
             if len(self.pontos) == 4:
                 
-                vaga = Vaga(self.pontos, self.question_popup(), calculate_color_histogram(self.recortar_Imagem(self.first_frame, self.pontos)))
+                vaga = Vaga(self.pontos, self.question_popup(), calculate_histograms(self.recortar_Imagem(self.first_frame, self.pontos)))
                 self.vagas.append(vaga)
                 self.pontos = []
                 frame = self.first_frame.copy()
